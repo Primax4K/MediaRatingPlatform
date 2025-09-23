@@ -1,5 +1,6 @@
 using WebAPI.ExtensionMethods;
 using WebAPI.Http;
+using WebAPI.Routers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 //builder.Services.AddOpenApi();
 
-//builder.Services.AddSingleton<CustomHttpHandler>();
+builder.Services.AddSingleton<CustomHttpHandler>();
+
+builder.Services.AddScoped<UserRouter>();
+
+
 
 var app = builder.Build();
 /*
