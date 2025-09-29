@@ -1,7 +1,4 @@
-﻿using System.Net;
-using WebAPI.HttpResponseHandler;
-
-namespace WebAPI.Extensions;
+﻿namespace WebAPI.Extensions;
 
 public static class HttpListenerResponseExtension
 {

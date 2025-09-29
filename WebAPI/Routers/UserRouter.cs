@@ -1,9 +1,4 @@
-﻿using System.Net;
-using WebAPI.Extensions;
-using WebAPI.Interfaces.Http;
-using WebAPI.Routers.Abstract;
-
-namespace WebAPI.Routers;
+﻿namespace WebAPI.Routers;
 
 public class UserRouter : ARouter, IHttpGetHandler
 {

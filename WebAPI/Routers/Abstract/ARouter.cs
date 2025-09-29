@@ -1,6 +1,4 @@
-﻿using System.Net;
-
-namespace WebAPI.Routers.Abstract;
+﻿namespace WebAPI.Routers.Abstract;
 
 public abstract class ARouter
 {

@@ -1,7 +1,4 @@
-﻿using System.Net;
-using WebAPI.Routers.Abstract;
-
-namespace WebAPI.Routers.Handler;
+﻿namespace WebAPI.Routers.Handler;
 
 public class RouterHandler
 {

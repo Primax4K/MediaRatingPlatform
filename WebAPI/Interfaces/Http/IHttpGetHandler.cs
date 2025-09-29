@@ -1,6 +1,4 @@
-﻿using System.Net;
-
-namespace WebAPI.Interfaces.Http;
+﻿namespace WebAPI.Interfaces.Http;
 
 public interface IHttpGetHandler
 {

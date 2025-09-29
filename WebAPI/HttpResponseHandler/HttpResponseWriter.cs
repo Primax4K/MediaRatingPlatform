@@ -1,7 +1,4 @@
-﻿using System.Net;
-using System.Text;
-
-namespace WebAPI.HttpResponseHandler;
+﻿namespace WebAPI.HttpResponseHandler;
 
 public static class HttpResponseWriter
 {

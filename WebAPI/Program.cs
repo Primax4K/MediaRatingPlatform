@@ -1,10 +1,4 @@
-﻿using System.Net;
-using Microsoft.Extensions.DependencyInjection;
-using WebAPI.HttpResponseHandler;
-using WebAPI.Routers;
-using WebAPI.Routers.Handler;
-
-var services = new ServiceCollection();
+﻿var services = new ServiceCollection();
 
 services.AddSingleton<UserRouter>();
 
