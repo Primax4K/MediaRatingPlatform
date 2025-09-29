@@ -5,29 +5,20 @@ namespace WebAPI.Routers.Handler;
 
 public class RouterHandler
 {
-    private readonly Dictionary<string, ARouter> _routers;
+    private readonly UserRouter _usersRouter;
 
     public RouterHandler(UserRouter usersRouter)
     {
-        _routers = new Dictionary<string, ARouter>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "/users", usersRouter },
-        };
+        _usersRouter = usersRouter;
     }
 
     public async Task Dispatch(HttpListenerRequest request, HttpListenerResponse response)
     {
         string path = request.Url.AbsolutePath.ToLower();
 
-        foreach (var kv in _routers)
-        {
-            if (path.StartsWith(kv.Key))
-            {
-                await kv.Value.Route(request, response);
-                return;
-            }
-        }
-
-        response.StatusCode = 404;
+        if (path.StartsWith("/users"))
+            await _usersRouter.Route(request, response);
+        else
+            response.StatusCode = 404;
     }
 }
