@@ -1,6 +1,5 @@
 ﻿global using System.Net;
 global using Microsoft.Extensions.DependencyInjection;
-global using WebAPI.HttpResponseHandler;
 global using WebAPI.Routers;
 global using WebAPI.Routers.Handler;
 global using WebAPI.Extensions;
