@@ -1,4 +1,11 @@
-﻿var services = new ServiceCollection();
+﻿using Microsoft.Extensions.Configuration;
+
+var config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
+
+var services = new ServiceCollection();
+services.AddSingleton<IConfiguration>(config);
 
 services.AddSingleton<UserRouter>();
 
@@ -7,10 +14,15 @@ services.AddSingleton<RouterHandler>();
 var provider = services.BuildServiceProvider();
 
 var routerHandler = provider.GetRequiredService<RouterHandler>();
+var configuration = provider.GetRequiredService<IConfiguration>();
+
 HttpListener listener = new HttpListener();
-listener.Prefixes.Add("http://localhost:8080/");
+
+string serverUrl = configuration["server"] ?? "http://localhost:8080/";
+
+listener.Prefixes.Add(serverUrl);
 listener.Start();
-Console.WriteLine("Listening on http://localhost:8080/");
+Console.WriteLine($"Listening on {serverUrl}");
 
 while (true)
 {
