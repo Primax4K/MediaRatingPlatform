@@ -2,7 +2,7 @@
 
 public class UserRouter : ARouter, IHttpGetHandler {
 	public UserRouter() {
-		Register(HttpMethod.Get.Method, "", HandleGet);
+		Register(HttpMethod.Get.Method, "/abc/ta", HandleGet);
 	}
 
 	public async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response) {
