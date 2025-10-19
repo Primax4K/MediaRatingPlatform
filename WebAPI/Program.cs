@@ -1,15 +1,9 @@
-﻿using Domain.ConnectionFactory;
-using Domain.Repositories.Implementations;
-using Domain.Repositories.Interfaces;
-using Microsoft.Extensions.Configuration;
-using WebAPI.Auth;
-
-var services = new ServiceCollection();
+﻿var services = new ServiceCollection();
 
 
 var configuration = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .Build();
+	.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+	.Build();
 services.AddSingleton<IConfiguration>(configuration);
 
 
@@ -22,9 +16,9 @@ services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 
 
 services.AddSingleton<IDbConnectionFactory>(_ =>
-    new NpgsqlConnectionFactory(
-        configuration.GetConnectionString("DefaultConnection")
-        ?? throw new Exception("No connection string found.")));
+	new NpgsqlConnectionFactory(
+		configuration.GetConnectionString("DefaultConnection")
+		?? throw new Exception("No connection string found.")));
 
 
 services.AddSingleton<UserRouter>();
@@ -43,27 +37,22 @@ listener.Prefixes.Add(serverUrl);
 listener.Start();
 Console.WriteLine($"Listening on {serverUrl}");
 
-while (true)
-{
-    var context = await listener.GetContextAsync();
-    _ = Task.Run(async () =>
-    {
-        var request = context.Request;
-        var response = context.Response;
-        
-        try
-        {
-            await routerHandler.Dispatch(request, response);
-        }
-        catch (Exception ex)
-        {
-            response.StatusCode = 500;
-            await response.WriteResponse($"<h1>Error: {ex.Message}</h1>");
-            Console.WriteLine(ex);
-        }
-        finally
-        {
-            response.OutputStream.Close();
-        }
-    });
+while (true) {
+	var context = await listener.GetContextAsync();
+	_ = Task.Run(async () => {
+		var request = context.Request;
+		var response = context.Response;
+
+		try {
+			await routerHandler.Dispatch(request, response);
+		}
+		catch (Exception ex) {
+			response.StatusCode = 500;
+			await response.WriteResponse($"<h1>Error: {ex.Message}</h1>");
+			Console.WriteLine(ex);
+		}
+		finally {
+			response.OutputStream.Close();
+		}
+	});
 }

@@ -1,6 +1,4 @@
-﻿using WebAPI.Auth;
-
-namespace WebAPI.Routers.Abstract;
+﻿namespace WebAPI.Routers.Abstract;
 
 public abstract class ARouter(IAuthHandler authHandler) {
 	private readonly Dictionary<string, Dictionary<string, (RequestHandler Handler, bool RequiresAuth)>> _handlers =

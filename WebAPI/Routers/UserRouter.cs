@@ -1,9 +1,4 @@
-﻿using System.Text.Json;
-using Domain.Repositories.Interfaces;
-using WebAPI.Auth;
-using WebAPI.Dtos;
-
-namespace WebAPI.Routers;
+﻿namespace WebAPI.Routers;
 
 public class UserRouter : ARouter {
 	private readonly IRatingLikeRepository _ratingLikeRepository;
@@ -12,7 +7,7 @@ public class UserRouter : ARouter {
 	public UserRouter(IRatingLikeRepository ratingLikeRepository, IAuthHandler authHandler) : base(authHandler) {
 		_ratingLikeRepository = ratingLikeRepository;
 		_authHandler = authHandler;
-		
+
 		Register(HttpMethod.Get.Method, "/abc/ta", HandleGet, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Get.Method, "/abc/{id}/{name}", HandleGetWithId, requiresAuth: true);
 		Register(HttpMethod.Post.Method, "/register", HandleRegister, requiresAuth: false);

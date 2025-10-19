@@ -1,12 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Domain.Repositories.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using Model.Entities;
-using WebAPI.Dtos;
-
-namespace WebAPI.Auth;
+﻿namespace WebAPI.Auth;
 
 public class AuthHandler : IAuthHandler {
 	private readonly IConfiguration _config;
@@ -18,7 +10,8 @@ public class AuthHandler : IAuthHandler {
 	}
 
 	private string GenerateJwtToken(string userId, string username) {
-		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"] ?? throw new InvalidOperationException()));
+		var key = new SymmetricSecurityKey(
+			Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"] ?? throw new InvalidOperationException()));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 		var token = new JwtSecurityToken(
@@ -38,24 +31,25 @@ public class AuthHandler : IAuthHandler {
 
 	public async Task<bool> RegisterUser(RegisterDto dto, CancellationToken ct = default) {
 		var user = await _userRepository.GetByUsernameAsync(dto.Username.ToLower(), ct);
-		if (user != null) 
+		if (user != null)
 			return false; // User already exists
-		
+
 		var hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-		
+
 		await _userRepository.CreateAsync(new AppUser {
 			Username = dto.Username.ToLower(),
 			PasswordHash = hashedPassword
 		}, ct);
-		
+
 		return true;
 	}
+
 	public async Task<string?> AuthenticateUser(LoginDto dto, CancellationToken ct = default) {
 		var user = await _userRepository.GetByUsernameAsync(dto.Username.ToLower(), ct);
-		
-		if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash)) 
+
+		if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
 			return null; // Invalid credentials
-		
+
 		return GenerateJwtToken(user.Id.ToString(), user.Username);
 	}
 
@@ -75,7 +69,8 @@ public class AuthHandler : IAuthHandler {
 			}, out SecurityToken validatedToken);
 
 			return true;
-		} catch {
+		}
+		catch {
 			return false;
 		}
 	}
