@@ -58,4 +58,25 @@ public class AuthHandler : IAuthHandler {
 		
 		return GenerateJwtToken(user.Id.ToString(), user.Username);
 	}
+
+	public async Task<bool> VerifyTokenAsync(string token, CancellationToken ct = default) {
+		var tokenHandler = new JwtSecurityTokenHandler();
+		var key = Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"] ?? throw new InvalidOperationException());
+
+		try {
+			tokenHandler.ValidateToken(token, new TokenValidationParameters {
+				ValidateIssuer = true,
+				ValidateAudience = true,
+				ValidateLifetime = true,
+				ValidateIssuerSigningKey = true,
+				ValidIssuer = _config["Jwt:Issuer"],
+				ValidAudience = _config["Jwt:Audience"],
+				IssuerSigningKey = new SymmetricSecurityKey(key)
+			}, out SecurityToken validatedToken);
+
+			return true;
+		} catch {
+			return false;
+		}
+	}
 }
