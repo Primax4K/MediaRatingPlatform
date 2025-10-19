@@ -1,6 +1,4 @@
-﻿using Npgsql;
-
-namespace Domain.ConnectionFactory;
+﻿namespace Domain.ConnectionFactory;
 
 public sealed class NpgsqlConnectionFactory : IDbConnectionFactory {
 	private readonly string _connString;

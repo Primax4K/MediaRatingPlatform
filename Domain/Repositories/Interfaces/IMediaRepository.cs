@@ -1,6 +1,4 @@
-﻿using Model.Entities;
-
-namespace Domain.Repositories.Interfaces;
+﻿namespace Domain.Repositories.Interfaces;
 
 public interface IMediaRepository : IRepository<Media, Guid> {
 	Task<IReadOnlyList<Media>> SearchByTitleAsync(string q, int take = 20, CancellationToken ct = default);

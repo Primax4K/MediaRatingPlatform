@@ -1,8 +1,4 @@
-﻿using Dapper;
-using Domain.ConnectionFactory;
-using Domain.Repositories.Interfaces;
-
-namespace Domain.Repositories.Implementations;
+﻿namespace Domain.Repositories.Implementations;
 
 public sealed class RatingLikeRepository : IRatingLikeRepository {
 	private readonly IDbConnectionFactory _factory;

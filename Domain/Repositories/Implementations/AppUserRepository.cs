@@ -1,9 +1,4 @@
-﻿using Dapper;
-using Domain.ConnectionFactory;
-using Domain.Repositories.Interfaces;
-using Model.Entities;
-
-namespace Domain.Repositories.Implementations;
+﻿namespace Domain.Repositories.Implementations;
 
 public sealed class AppUserRepository : IAppUserRepository {
 	private readonly IDbConnectionFactory _factory;

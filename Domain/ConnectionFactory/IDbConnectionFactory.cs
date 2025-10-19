@@ -1,6 +1,4 @@
-﻿using Npgsql;
-
-namespace Domain.ConnectionFactory;
+﻿namespace Domain.ConnectionFactory;
 
 public interface IDbConnectionFactory {
 	NpgsqlConnection Create();
