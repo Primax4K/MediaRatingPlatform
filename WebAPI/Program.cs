@@ -2,6 +2,7 @@
 using Domain.Repositories.Implementations;
 using Domain.Repositories.Interfaces;
 using Microsoft.Extensions.Configuration;
+using WebAPI.Auth;
 
 var services = new ServiceCollection();
 
@@ -28,6 +29,8 @@ services.AddSingleton<IDbConnectionFactory>(_ =>
 
 services.AddSingleton<UserRouter>();
 services.AddSingleton<RouterHandler>();
+
+services.AddScoped<IAuthHandler, AuthHandler>();
 
 
 await using var provider = services.BuildServiceProvider();
@@ -56,6 +59,7 @@ while (true)
         {
             response.StatusCode = 500;
             await response.WriteResponse($"<h1>Error: {ex.Message}</h1>");
+            Console.WriteLine(ex);
         }
         finally
         {

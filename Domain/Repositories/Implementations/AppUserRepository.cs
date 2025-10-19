@@ -27,7 +27,7 @@ public sealed class AppUserRepository : IAppUserRepository {
 
 	public async Task<AppUser?> GetByUsernameAsync(string username, CancellationToken ct = default) {
 		const string sql =
-			"select id, username, password_hash, created_at from app_user where lower(username)=lower(@u) limit 1;";
+			"select id, username, password_hash as PasswordHash, created_at as CreatedAt from app_user where lower(username)=lower(@u) limit 1;";
 		await using var c = _factory.Create();
 		await c.OpenAsync(ct);
 		return await c.QueryFirstOrDefaultAsync<AppUser>(new CommandDefinition(sql, new { u = username },
