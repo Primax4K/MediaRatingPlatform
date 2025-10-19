@@ -16,8 +16,7 @@ public static class HandlerExtensions {
 		}
 
 		if (handlerInfo.RequiresAuth && !await isAuthenticated(request)) {
-			response.StatusCode = 401;
-			await response.WriteResponse(401, "<h1>Unauthorized</h1>");
+			await response.WriteResponse(HttpStatusCode.Unauthorized, "Unauthorized");
 			return true;
 		}
 
@@ -41,8 +40,7 @@ public static class HandlerExtensions {
 			}
 
 			if (handlerInfo.RequiresAuth && !await isAuthenticated(request)) {
-				response.StatusCode = 401;
-				await response.WriteResponse(401, "<h1>Unauthorized</h1>");
+				await response.WriteResponse(HttpStatusCode.Unauthorized, "Unauthorized");
 				return true;
 			}
 

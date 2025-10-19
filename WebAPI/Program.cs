@@ -48,7 +48,7 @@ while (true) {
 		}
 		catch (Exception ex) {
 			response.StatusCode = 500;
-			await response.WriteResponse($"<h1>Error: {ex.Message}</h1>");
+			await response.WriteResponse($"Error: {ex.Message}");
 			Console.WriteLine(ex);
 		}
 		finally {

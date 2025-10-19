@@ -15,14 +15,14 @@ public class UserRouter : ARouter {
 	}
 
 	private async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response) {
-		await response.WriteResponse("<h1>User GET Handler</h1>");
+		await response.WriteResponse("User GET Handler");
 	}
 
 	private async Task HandleGetWithId(HttpListenerRequest request, HttpListenerResponse response,
 		Dictionary<string, string> parameters) {
 		var id = parameters["id"];
 		var name = parameters["name"];
-		await response.WriteResponse($"<h1>User GET Handler - ID: {id} and name {name}</h1>");
+		await response.WriteResponse($"User GET Handler - ID: {id} and name {name}");
 	}
 
 	private async Task HandleRegister(HttpListenerRequest request, HttpListenerResponse response) {
@@ -32,16 +32,16 @@ public class UserRouter : ARouter {
 
 		if (registerDto == null || string.IsNullOrEmpty(registerDto.Username) ||
 		    string.IsNullOrEmpty(registerDto.Password)) {
-			await response.WriteResponse(400, "<h1>Invalid registration data</h1>");
+			await response.WriteResponse(HttpStatusCode.BadRequest, "Invalid registration data");
 			return;
 		}
 
 		bool success = await _authHandler.RegisterUser(registerDto);
 
 		if (success)
-			await response.WriteResponse(201, "<h1>User registered successfully</h1>");
+			await response.WriteResponse(HttpStatusCode.Created, "User registered successfully");
 		else
-			await response.WriteResponse(409, "<h1>Failed to create user</h1>");
+			await response.WriteResponse(HttpStatusCode.Conflict, "Failed to create user");
 	}
 
 	private async Task HandleLogin(HttpListenerRequest request, HttpListenerResponse response) {
@@ -50,15 +50,15 @@ public class UserRouter : ARouter {
 		LoginDto? authDto = JsonSerializer.Deserialize<LoginDto>(body);
 
 		if (authDto == null || string.IsNullOrEmpty(authDto.Username) || string.IsNullOrEmpty(authDto.Password)) {
-			await response.WriteResponse(400, "<h1>Invalid authentication data</h1>");
+			await response.WriteResponse(HttpStatusCode.BadRequest, "Invalid authentication data");
 			return;
 		}
 
 		string? token = await _authHandler.AuthenticateUser(authDto);
 
 		if (token != null)
-			await response.WriteResponse(200, JsonSerializer.Serialize(new { Token = token }));
+			await response.WriteResponse(JsonSerializer.Serialize(new { Token = token }));
 		else
-			await response.WriteResponse(401, "<h1>Authentication failed</h1>");
+			await response.WriteResponse(HttpStatusCode.Unauthorized, "Authentication failed");
 	}
 }
