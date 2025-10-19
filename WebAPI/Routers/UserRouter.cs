@@ -1,17 +1,18 @@
 ﻿namespace WebAPI.Routers;
 
 public class UserRouter : ARouter {
-	private readonly IRatingLikeRepository _ratingLikeRepository;
 	private readonly IAuthHandler _authHandler;
+	private readonly IAppUserRepository _userRepository;
 
-	public UserRouter(IRatingLikeRepository ratingLikeRepository, IAuthHandler authHandler) : base(authHandler) {
-		_ratingLikeRepository = ratingLikeRepository;
+	public UserRouter(IAuthHandler authHandler, IAppUserRepository userRepository) : base(authHandler) {
 		_authHandler = authHandler;
+		_userRepository = userRepository;
 
 		Register(HttpMethod.Get.Method, "/abc/ta", HandleGet, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Get.Method, "/abc/{id}/{name}", HandleGetWithId, requiresAuth: true);
 		Register(HttpMethod.Post.Method, "/register", HandleRegister, requiresAuth: false);
 		Register(HttpMethod.Post.Method, "/login", HandleLogin, requiresAuth: false);
+		RegisterWithParams(HttpMethod.Delete.Method, "/{id}", DeleteUser, requiresAuth: true);
 	}
 
 	private async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response) {
@@ -60,5 +61,16 @@ public class UserRouter : ARouter {
 			await response.WriteResponse(JsonSerializer.Serialize(new { Token = token }));
 		else
 			await response.WriteResponse(HttpStatusCode.Unauthorized, "Authentication failed");
+	}
+	
+	private async Task DeleteUser(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		var id = parameters["id"];
+		bool success = await _userRepository.DeleteAsync(Guid.Parse(id));
+		
+		if (success)
+			response.StatusCode = (int)HttpStatusCode.NoContent;
+		else
+			await response.WriteResponse(HttpStatusCode.NotFound, "User not found");
 	}
 }
