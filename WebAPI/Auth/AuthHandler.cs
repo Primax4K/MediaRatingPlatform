@@ -74,4 +74,11 @@ public class AuthHandler : IAuthHandler {
 			return false;
 		}
 	}
+
+	public Task<string?> GetUserIdFromTokenAsync(string token, CancellationToken ct = default) {
+		var tokenHandler = new JwtSecurityTokenHandler();
+		var jwtToken = tokenHandler.ReadJwtToken(token);
+		var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+		return Task.FromResult(userIdClaim?.Value);
+	}
 }

@@ -2,105 +2,104 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 DO $$
-    BEGIN
+BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'media_type') THEN
-            CREATE TYPE media_type AS ENUM ('movie','series','game');
-        END IF;
+CREATE TYPE media_type AS ENUM ('movie','series','game');
+END IF;
     END$$;
 
-CREATE TABLE IF NOT EXISTS app_user (
-                                        id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                        username       TEXT NOT NULL UNIQUE,
-                                        password_hash  TEXT NOT NULL,
-                                        created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+CREATE TABLE IF NOT EXISTS appuser (
+                                       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT NOT NULL UNIQUE,
+    passwordhash TEXT NOT NULL,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
 
 CREATE TABLE IF NOT EXISTS genre (
-                                     id    UUID PRIMARY KEY DEFAULT public.gen_random_uuid(),
-                                     name  TEXT NOT NULL UNIQUE
-);
+                                     id UUID PRIMARY KEY DEFAULT public.gen_random_uuid(),
+    name TEXT NOT NULL UNIQUE
+    );
 
 CREATE TABLE IF NOT EXISTS media (
-                                     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                     title            TEXT NOT NULL,
-                                     description      TEXT NOT NULL,
-                                     type             media_type NOT NULL,
-                                     release_year     INT NOT NULL CHECK (release_year BETWEEN 1870 AND 3000),
-                                     age_restriction  SMALLINT NOT NULL CHECK (age_restriction BETWEEN 0 AND 21),
-                                     created_by       UUID NOT NULL REFERENCES app_user(id) ON DELETE RESTRICT,
-                                     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+                                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    type media_type NOT NULL,
+    releaseyear INT NOT NULL CHECK (releaseyear BETWEEN 1870 AND 3000),
+    agerestriction SMALLINT NOT NULL CHECK (agerestriction BETWEEN 0 AND 21),
+    createdby UUID NOT NULL REFERENCES appuser(id) ON DELETE RESTRICT,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
 CREATE INDEX IF NOT EXISTS idx_media_title_trgm ON media USING gin (title gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_media_filters ON media(type, release_year, age_restriction);
+CREATE INDEX IF NOT EXISTS idx_media_filters ON media(type, releaseyear, agerestriction);
 
-CREATE TABLE IF NOT EXISTS media_genre (
-                                           media_id UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
-                                           genre_id UUID NOT NULL REFERENCES genre(id) ON DELETE CASCADE,
-                                           PRIMARY KEY (media_id, genre_id)
-);
+CREATE TABLE IF NOT EXISTS mediagenre (
+                                          mediaid UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+    genreid UUID NOT NULL REFERENCES genre(id) ON DELETE CASCADE,
+    PRIMARY KEY (mediaid, genreid)
+    );
 
 CREATE TABLE IF NOT EXISTS rating (
-                                      id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                      media_id           UUID NOT NULL REFERENCES media(id)  ON DELETE CASCADE,
-                                      user_id            UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-                                      stars              SMALLINT NOT NULL CHECK (stars BETWEEN 1 AND 5),
-                                      comment            TEXT,
-                                      comment_confirmed  BOOLEAN NOT NULL DEFAULT FALSE,
-                                      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                      UNIQUE (media_id, user_id)
-);
-CREATE INDEX IF NOT EXISTS idx_rating_media ON rating(media_id);
-CREATE INDEX IF NOT EXISTS idx_rating_user ON rating(user_id);
-CREATE INDEX IF NOT EXISTS idx_rating_confirmed ON rating(comment_confirmed);
+                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    mediaid UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES appuser(id) ON DELETE CASCADE,
+    stars SMALLINT NOT NULL CHECK (stars BETWEEN 1 AND 5),
+    comment TEXT,
+    commentconfirmed BOOLEAN NOT NULL DEFAULT FALSE,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (mediaid, userid)
+    );
+CREATE INDEX IF NOT EXISTS idx_rating_media ON rating(mediaid);
+CREATE INDEX IF NOT EXISTS idx_rating_user ON rating(userid);
+CREATE INDEX IF NOT EXISTS idx_rating_confirmed ON rating(commentconfirmed);
 
-CREATE TABLE IF NOT EXISTS rating_like (
-                                           rating_id UUID NOT NULL REFERENCES rating(id) ON DELETE CASCADE,
-                                           user_id   UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-                                           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                           PRIMARY KEY (rating_id, user_id)
-);
+CREATE TABLE IF NOT EXISTS ratinglike (
+                                          ratingid UUID NOT NULL REFERENCES rating(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES appuser(id) ON DELETE CASCADE,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ratingid, userid)
+    );
 
 CREATE TABLE IF NOT EXISTS favorite (
-                                        user_id   UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
-                                        media_id  UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
-                                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                        PRIMARY KEY (user_id, media_id)
-);
+                                        userid UUID NOT NULL REFERENCES appuser(id) ON DELETE CASCADE,
+    mediaid UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (userid, mediaid)
+    );
 
-CREATE OR REPLACE VIEW media_score AS
+CREATE OR REPLACE VIEW mediascore AS
 SELECT
-    m.id AS media_id,
-    AVG(r.stars)::NUMERIC(3,2) AS avg_stars,
-    COUNT(r.*) AS ratings_count
+    m.id AS mediaid,
+    AVG(r.stars)::NUMERIC(3,2) AS avgstars,
+    COUNT(r.*) AS ratingscount
 FROM media m
-         LEFT JOIN rating r ON r.media_id = m.id
+         LEFT JOIN rating r ON r.mediaid = m.id
 GROUP BY m.id;
 
-CREATE OR REPLACE VIEW leaderboard_user_ratings AS
+CREATE OR REPLACE VIEW leaderboarduserratings AS
 SELECT
-    u.id   AS user_id,
+    u.id AS userid,
     u.username,
-    COUNT(r.*) AS total_ratings,
-    COALESCE(AVG(NULLIF(r.stars,0)),0)::NUMERIC(3,2) AS avg_given_stars
-FROM app_user u
-         LEFT JOIN rating r ON r.user_id = u.id
+    COUNT(r.*) AS totalratings,
+    COALESCE(AVG(NULLIF(r.stars,0)),0)::NUMERIC(3,2) AS avggivenstars
+FROM appuser u
+         LEFT JOIN rating r ON r.userid = u.id
 GROUP BY u.id, u.username
-ORDER BY total_ratings DESC, avg_given_stars DESC;
+ORDER BY totalratings DESC, avggivenstars DESC;
 
-CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION setupdatedat() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at := NOW();
-    RETURN NEW;
+    NEW.updatedat := NOW();
+RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-
 DROP TRIGGER IF EXISTS trg_media_updated ON media;
 CREATE TRIGGER trg_media_updated BEFORE UPDATE ON media
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    FOR EACH ROW EXECUTE FUNCTION setupdatedat();
 
 DROP TRIGGER IF EXISTS trg_rating_updated ON rating;
 CREATE TRIGGER trg_rating_updated BEFORE UPDATE ON rating
-    FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    FOR EACH ROW EXECUTE FUNCTION setupdatedat();

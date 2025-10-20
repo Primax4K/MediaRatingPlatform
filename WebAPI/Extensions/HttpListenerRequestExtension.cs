@@ -9,4 +9,13 @@ public static class HttpListenerRequestExtension {
 		using var reader = new StreamReader(stream, request.ContentEncoding, leaveOpen: true);
 		return await reader.ReadToEndAsync().ConfigureAwait(false);
 	}
+	
+	public static string GetAuthToken(this HttpListenerRequest request) {
+		string? authHeader = request.Headers["Authorization"];
+		if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ")) {
+			return string.Empty;
+		}
+
+		return authHeader.Substring("Bearer ".Length).Trim();
+	}
 }
