@@ -28,18 +28,18 @@ INSERT INTO media_genre (media_id, genre_id) VALUES
 
 -- ratings (valid UUIDs)
 INSERT INTO rating (
-    id, media_id, userid, stars, comment, comment_confirmed
+    id, media_id, user_id, stars, comment, comment_confirmed
 ) VALUES
       ('41111111-1111-1111-1111-111111111111','aaaaaaaa-1111-1111-1111-aaaaaaaa1111','22222222-2222-2222-2222-222222222222',5,'Amazing movie',TRUE),
       ('42222222-2222-2222-2222-222222222222','bbbbbbbb-2222-2222-2222-bbbbbbbb2222','11111111-1111-1111-1111-111111111111',4,'Very intense',TRUE),
       ('43333333-3333-3333-3333-333333333333','cccccccc-3333-3333-3333-cccccccc3333','11111111-1111-1111-1111-111111111111',5,'Masterpiece',FALSE);
 
 -- rating likes
-INSERT INTO rating_like (rating_id, userid) VALUES
+INSERT INTO rating_like (rating_id, user_id) VALUES
                                                 ('41111111-1111-1111-1111-111111111111','11111111-1111-1111-1111-111111111111'),
                                                 ('42222222-2222-2222-2222-222222222222','33333333-3333-3333-3333-333333333333');
 
 -- favorites
-INSERT INTO favorite (userid, media_id) VALUES
+INSERT INTO favorite (user_id, media_id) VALUES
                                             ('11111111-1111-1111-1111-111111111111','aaaaaaaa-1111-1111-1111-aaaaaaaa1111'),
                                             ('22222222-2222-2222-2222-222222222222','cccccccc-3333-3333-3333-cccccccc3333');

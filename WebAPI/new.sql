@@ -48,31 +48,31 @@ CREATE TABLE IF NOT EXISTS media_genre (
 CREATE TABLE IF NOT EXISTS rating (
                                       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                                       media_id UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
-                                      userid UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+                                      user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
                                       stars SMALLINT NOT NULL CHECK (stars BETWEEN 1 AND 5),
                                       comment TEXT,
                                       comment_confirmed BOOLEAN NOT NULL DEFAULT FALSE,
                                       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                                       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                      UNIQUE (media_id, userid)
+                                      UNIQUE (media_id, user_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_rating_media ON rating(media_id);
-CREATE INDEX IF NOT EXISTS idx_rating_user ON rating(userid);
+CREATE INDEX IF NOT EXISTS idx_rating_user ON rating(user_id);
 CREATE INDEX IF NOT EXISTS idx_rating_confirmed ON rating(comment_confirmed);
 
 CREATE TABLE IF NOT EXISTS rating_like (
                                            rating_id UUID NOT NULL REFERENCES rating(id) ON DELETE CASCADE,
-                                           userid UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+                                           user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
                                            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                           PRIMARY KEY (rating_id, userid)
+                                           PRIMARY KEY (rating_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS favorite (
-                                        userid UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+                                        user_id UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
                                         media_id UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
                                         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                                        PRIMARY KEY (userid, media_id)
+                                        PRIMARY KEY (user_id, media_id)
 );
 
 CREATE OR REPLACE VIEW mediascore AS
@@ -86,12 +86,12 @@ GROUP BY m.id;
 
 CREATE OR REPLACE VIEW leaderboarduserratings AS
 SELECT
-    u.id AS userid,
+    u.id AS user_id,
     u.username,
     COUNT(r.*) AS totalratings,
     COALESCE(AVG(NULLIF(r.stars,0)),0)::NUMERIC(3,2) AS avggivenstars
 FROM app_user u
-         LEFT JOIN rating r ON r.userid = u.id
+         LEFT JOIN rating r ON r.user_id = u.id
 GROUP BY u.id, u.username
 ORDER BY totalratings DESC, avggivenstars DESC;
 
