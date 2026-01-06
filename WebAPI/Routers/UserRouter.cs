@@ -1,4 +1,7 @@
-﻿namespace WebAPI.Routers;
+﻿using WebAPI.Dtos.Auth;
+using WebAPI.Dtos.User;
+
+namespace WebAPI.Routers;
 
 public class UserRouter : ARouter {
 	private readonly IAuthHandler _authHandler;

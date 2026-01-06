@@ -1,4 +1,7 @@
-﻿namespace WebAPI.Auth;
+﻿using WebAPI.Dtos.Auth;
+using WebAPI.Dtos.User;
+
+namespace WebAPI.Auth;
 
 public interface IAuthHandler {
 	Task<bool> RegisterUser(RegisterDto dto, CancellationToken ct = default);

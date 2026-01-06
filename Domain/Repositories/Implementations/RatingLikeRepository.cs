@@ -31,4 +31,21 @@ public sealed class RatingLikeRepository : DbHelper, IRatingLikeRepository {
 
 		return await cmd.ExecuteNonQueryAsync(ct) == 1;
 	}
+
+	public async Task<bool> ExistsAsync(Guid ratingId, Guid userId, CancellationToken ct = default) {
+		const string sql = "select count(1) from rating_like where rating_id=@r and user_id=@u;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@r", ratingId);
+		Param(cmd, "@u", userId);
+
+		var result = await cmd.ExecuteScalarAsync(ct);
+		if (result == null || result == DBNull.Value)
+			return false;
+
+		return Convert.ToInt32(result) > 0;
+	}
 }
