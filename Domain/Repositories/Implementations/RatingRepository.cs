@@ -110,6 +110,41 @@ where id = @id returning id,
 		return Map(r);
 	}
 
+	public async Task<List<Rating>> GetByMedia(Guid mediaId, int skip, int take, CancellationToken ct = default) {
+		const string sql = @"select id,
+       media_id,
+       user_id,
+       stars,
+       comment,
+       comment_confirmed,
+       created_at,
+       updated_at
+from rating
+where media_id = @mediaId
+order by created_at desc
+offset @skip limit @take;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@mediaId", mediaId);
+		Param(cmd, "@skip", skip);
+		Param(cmd, "@take", take);
+
+		var list = new List<Rating>(take);
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		while (await r.ReadAsync(ct))
+			list.Add(Map(r));
+
+		list = list.Select(r => {
+			r.Comment = r.CommentConfirmed ? r.Comment : string.Empty;
+			return r;
+		}).ToList();
+
+		return list;
+	}
+
 
 	public async Task<Rating> CreateAsync(Rating e, CancellationToken ct = default) {
 		const string sql = @"

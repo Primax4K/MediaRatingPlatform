@@ -23,6 +23,8 @@ public class MediaRouter : ARouter {
 		RegisterWithParams(HttpMethod.Delete.Method, "{mediaId}/favorite", RemoveFavorite, requiresAuth: true);
 		
 		Register(HttpMethod.Get.Method, "/", ListMedia, requiresAuth: true);
+		
+		RegisterWithParams(HttpMethod.Get.Method, "{mediaId}/ratings", ListMediaRatings, requiresAuth: true);
 
 	}
 
@@ -264,5 +266,22 @@ public class MediaRouter : ARouter {
 			take);
 
 		await response.WriteResponse(HttpStatusCode.OK, JsonSerializer.Serialize(list));
+	}
+	
+	private async Task ListMediaRatings(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		string mediaIdRaw = parameters["mediaId"];
+
+		if (!Guid.TryParse(mediaIdRaw, out var mediaId)) {
+			await response.WriteResponse(HttpStatusCode.BadRequest, "Invalid media ID");
+			return;
+		}
+
+		int skip = int.TryParse(request.QueryString["skip"], out var s) ? s : 0;
+		int take = int.TryParse(request.QueryString["take"], out var t) ? t : 100;
+
+		var ratings = await _ratingRepository.GetByMedia(mediaId, skip, take);
+
+		await response.WriteResponse(HttpStatusCode.OK, JsonSerializer.Serialize(ratings));
 	}
 }

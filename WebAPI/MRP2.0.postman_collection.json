@@ -1,0 +1,302 @@
+{
+	"info": {
+		"_postman_id": "d9f3237b-bb0d-47ec-a4ed-32df9d666d74",
+		"name": "MRP2.0",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24070266"
+	},
+	"item": [
+		{
+			"name": "Register",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Username\": \"primax\",\r\n    \"Password\": \"hallo123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/users/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"Username\": \"primax\",\r\n    \"Password\": \"hallo123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/users/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Media",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzN2RhOWMxNy05OTYxLTRjMjQtYWY1ZC01MGM1ODgzNjJhNzMiLCJuYW1lIjoicHJpbWF4IiwibmJmIjoxNzY3NzMyNjM3LCJleHAiOjE3Njc3MzYyMzcsImlzcyI6Im1ycC1hcGkiLCJhdWQiOiJtcnAtY2xpZW50In0.GEOs4P550T_TCwZCXbfDcGHrN5xBlEDeG6dI7oNwnJo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"Sample Title\",\r\n  \"description\": \"Sample description text.\",\r\n  \"type\": \"movie\",\r\n  \"releaseYear\": 2024,\r\n  \"ageRestriction\": 16\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/media",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"media"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View Media",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Rate Media",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzN2RhOWMxNy05OTYxLTRjMjQtYWY1ZC01MGM1ODgzNjJhNzMiLCJuYW1lIjoicHJpbWF4IiwibmJmIjoxNzY3NzMyNjM3LCJleHAiOjE3Njc3MzYyMzcsImlzcyI6Im1ycC1hcGkiLCJhdWQiOiJtcnAtY2xpZW50In0.GEOs4P550T_TCwZCXbfDcGHrN5xBlEDeG6dI7oNwnJo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"stars\": 4,\r\n  \"comment\": \"Great content, really enjoyed it.\",\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/media/eef95463-44a4-4384-b0b2-7c1ca1db5107/rate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"media",
+						"eef95463-44a4-4384-b0b2-7c1ca1db5107",
+						"rate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View Ratings",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzN2RhOWMxNy05OTYxLTRjMjQtYWY1ZC01MGM1ODgzNjJhNzMiLCJuYW1lIjoicHJpbWF4IiwibmJmIjoxNzY3NzMyNjM3LCJleHAiOjE3Njc3MzYyMzcsImlzcyI6Im1ycC1hcGkiLCJhdWQiOiJtcnAtY2xpZW50In0.GEOs4P550T_TCwZCXbfDcGHrN5xBlEDeG6dI7oNwnJo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/media/eef95463-44a4-4384-b0b2-7c1ca1db5107/ratings",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"media",
+						"eef95463-44a4-4384-b0b2-7c1ca1db5107",
+						"ratings"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Mark Media As Fav",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzN2RhOWMxNy05OTYxLTRjMjQtYWY1ZC01MGM1ODgzNjJhNzMiLCJuYW1lIjoicHJpbWF4IiwibmJmIjoxNzY3NzMyNjM3LCJleHAiOjE3Njc3MzYyMzcsImlzcyI6Im1ycC1hcGkiLCJhdWQiOiJtcnAtY2xpZW50In0.GEOs4P550T_TCwZCXbfDcGHrN5xBlEDeG6dI7oNwnJo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/media/eef95463-44a4-4384-b0b2-7c1ca1db5107/favorite",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"media",
+						"eef95463-44a4-4384-b0b2-7c1ca1db5107",
+						"favorite"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Like Rating",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Confirm Own Rating",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzN2RhOWMxNy05OTYxLTRjMjQtYWY1ZC01MGM1ODgzNjJhNzMiLCJuYW1lIjoicHJpbWF4IiwibmJmIjoxNzY3NzMyNjM3LCJleHAiOjE3Njc3MzYyMzcsImlzcyI6Im1ycC1hcGkiLCJhdWQiOiJtcnAtY2xpZW50In0.GEOs4P550T_TCwZCXbfDcGHrN5xBlEDeG6dI7oNwnJo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/ratings/0c36b2c0-a432-4422-a1c8-7fb4284378bd/confirm",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"ratings",
+						"0c36b2c0-a432-4422-a1c8-7fb4284378bd",
+						"confirm"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "View LeaderBoard",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "View Ratings Of User",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "View Favorites",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzN2RhOWMxNy05OTYxLTRjMjQtYWY1ZC01MGM1ODgzNjJhNzMiLCJuYW1lIjoicHJpbWF4IiwibmJmIjoxNzY3NzMyNjM3LCJleHAiOjE3Njc3MzYyMzcsImlzcyI6Im1ycC1hcGkiLCJhdWQiOiJtcnAtY2xpZW50In0.GEOs4P550T_TCwZCXbfDcGHrN5xBlEDeG6dI7oNwnJo",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/users/37da9c17-9961-4c24-af5d-50c588362a73/favorites",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"users",
+						"37da9c17-9961-4c24-af5d-50c588362a73",
+						"favorites"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
