@@ -21,6 +21,9 @@ public class MediaRouter : ARouter {
 		RegisterWithParams(HttpMethod.Post.Method, "/{id}/rate", RateMedia, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Post.Method, "{mediaId}/favorite", MarkAsFavorite, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Delete.Method, "{mediaId}/favorite", RemoveFavorite, requiresAuth: true);
+		
+		Register(HttpMethod.Get.Method, "/", ListMedia, requiresAuth: true);
+
 	}
 
 	private async Task CreateMedia(HttpListenerRequest request, HttpListenerResponse response) {
@@ -83,6 +86,20 @@ public class MediaRouter : ARouter {
 			return;
 		}
 
+		string token = request.GetAuthToken();
+		string? userIdStr = await _authHandler.GetUserIdFromTokenAsync(token);
+		if (userIdStr == null)
+		{
+			await response.WriteResponse(HttpStatusCode.Unauthorized, "Unauthorized");
+			return;
+		}
+
+		if (existingMedia.CreatedBy != Guid.Parse(userIdStr))
+		{
+			await response.WriteResponse(HttpStatusCode.Forbidden, "Forbidden");
+			return;
+		}
+		
 		var body = await request.ReadRequestBodyAsync();
 		var updatedMedia = JsonSerializer.Deserialize<Media>(body, JsonSerializerOptions.Web);
 		if (updatedMedia == null) {
@@ -159,6 +176,13 @@ public class MediaRouter : ARouter {
 			await response.WriteResponse(HttpStatusCode.Unauthorized, "Invalid token");
 			return;
 		}
+		
+		var existing = await _ratingRepository.GetByUserAndMediaAsync(Guid.Parse(userId), id);
+		if (existing != null)
+		{
+			await response.WriteResponse(HttpStatusCode.Conflict, "Already rated");
+			return;
+		}
 
 		ratingData.UserId = Guid.Parse(userId);
 		ratingData.MediaId = id;
@@ -212,5 +236,33 @@ public class MediaRouter : ARouter {
 		await _favoriteRepository.RemoveAsync(Guid.Parse(userId), mediaId);
 
 		await response.WriteResponse(HttpStatusCode.OK, "Media removed from favorites successfully");
+	}
+	
+	private async Task ListMedia(HttpListenerRequest request, HttpListenerResponse response)
+	{
+		int skip = int.TryParse(request.QueryString["skip"], out var s) ? s : 0;
+		int take = int.TryParse(request.QueryString["take"], out var t) ? t : 100;
+
+		string? title = request.QueryString["title"];
+		string? genre = request.QueryString["genre"];
+		string? mediaType = request.QueryString["mediaType"];
+		string? sortBy = request.QueryString["sortBy"];
+
+		int? releaseYear = int.TryParse(request.QueryString["releaseYear"], out var y) ? y : null;
+		short? ageRestriction = short.TryParse(request.QueryString["ageRestriction"], out var a) ? a : null;
+		int? rating = int.TryParse(request.QueryString["rating"], out var r) ? r : null;
+
+		var list = await _mediaRepository.QueryAsync(
+			title,
+			genre,
+			mediaType,
+			releaseYear,
+			ageRestriction,
+			rating,
+			sortBy,
+			skip,
+			take);
+
+		await response.WriteResponse(HttpStatusCode.OK, JsonSerializer.Serialize(list));
 	}
 }

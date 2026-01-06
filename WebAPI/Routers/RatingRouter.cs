@@ -16,6 +16,8 @@ public class RatingRouter : ARouter {
 		RegisterWithParams(HttpMethod.Post.Method, "/{id}/like", LikeRating, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Put.Method, "/{ratingId}", UpdateRating, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Post.Method, "/{ratingId}/confirm", ConfirmRating, requiresAuth: true);
+		
+		RegisterWithParams(HttpMethod.Delete.Method, "/{ratingId}", DeleteRating, requiresAuth: true);
 	}
 
 	private async Task LikeRating(HttpListenerRequest request, HttpListenerResponse response,
@@ -133,5 +135,38 @@ public class RatingRouter : ARouter {
 		var confirmedRating = await _ratingRepository.ConfirmRating(ratingId);
 
 		await response.WriteResponse(HttpStatusCode.OK, JsonSerializer.Serialize(confirmedRating));
+	}
+	
+	private async Task DeleteRating(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		string ratingIdRaw = parameters["ratingId"];
+
+		if (!Guid.TryParse(ratingIdRaw, out var ratingId)) {
+			await response.WriteResponse(HttpStatusCode.BadRequest, "Invalid rating ID");
+			return;
+		}
+
+		string token = request.GetAuthToken();
+		string? userId = await _authHandler.GetUserIdFromTokenAsync(token);
+
+		if (userId == null) {
+			await response.WriteResponse(HttpStatusCode.Unauthorized, "Invalid token");
+			return;
+		}
+
+		var existingRating = await _ratingRepository.GetByIdAsync(ratingId);
+		if (existingRating == null) {
+			await response.WriteResponse(HttpStatusCode.NotFound, "Rating not found");
+			return;
+		}
+
+		if (existingRating.UserId != Guid.Parse(userId)) {
+			await response.WriteResponse(HttpStatusCode.Forbidden, "You can only delete your own ratings");
+			return;
+		}
+
+		await _ratingRepository.DeleteAsync(ratingId);
+
+		await response.WriteResponse(HttpStatusCode.NoContent, string.Empty);
 	}
 }

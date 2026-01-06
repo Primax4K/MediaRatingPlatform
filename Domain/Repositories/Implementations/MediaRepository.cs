@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using System.Text;
 
 namespace Domain.Repositories.Implementations;
 
@@ -14,6 +15,8 @@ select id,
        type,
        release_year,
        age_restriction,
+       average_rating,
+       ratings_count,
        created_by,
        created_at,
        updated_at
@@ -40,6 +43,8 @@ select id,
        type,
        release_year,
        age_restriction,
+       average_rating,
+       ratings_count,
        created_by,
        created_at,
        updated_at
@@ -65,15 +70,17 @@ offset @skip limit @take;";
 	public async Task<Media> CreateAsync(Media e, CancellationToken ct = default) {
 		const string sql = @"
 insert into media
-(id, title, description, type, release_year, age_restriction, created_by, created_at, updated_at)
+(id, title, description, type, release_year, age_restriction, average_rating, ratings_count, created_by, created_at, updated_at)
 values
-(coalesce(@Id, gen_random_uuid()), @Title, @Description, @Type::media_type, @ReleaseYear, @AgeRestriction, @CreatedBy, now(), now())
+(coalesce(@Id, gen_random_uuid()), @Title, @Description, @Type::media_type, @ReleaseYear, @AgeRestriction, 0, 0, @CreatedBy, now(), now())
 returning id,
           title,
           description,
           type,
           release_year,
           age_restriction,
+          average_rating,
+          ratings_count,
           created_by,
           created_at,
           updated_at;";
@@ -133,8 +140,7 @@ where id=@Id;";
 		return await cmd.ExecuteNonQueryAsync(ct) == 1;
 	}
 
-	public async Task<IReadOnlyList<Media>>
-		SearchByTitleAsync(string q, int take = 20, CancellationToken ct = default) {
+	public async Task<IReadOnlyList<Media>> SearchByTitleAsync(string q, int take = 20, CancellationToken ct = default) {
 		const string sql = @"
 select id,
        title,
@@ -142,6 +148,8 @@ select id,
        type,
        release_year,
        age_restriction,
+       average_rating,
+       ratings_count,
        created_by,
        created_at,
        updated_at
@@ -202,6 +210,90 @@ limit @take;";
 		AgeRestriction = r.GetInt16(r.GetOrdinal("age_restriction")),
 		CreatedBy = r.GetGuid(r.GetOrdinal("created_by")),
 		CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
-		UpdatedAt = r.GetDateTime(r.GetOrdinal("updated_at"))
+		UpdatedAt = r.GetDateTime(r.GetOrdinal("updated_at")),
+		RatingsCount = r.GetInt32(r.GetOrdinal("ratings_count")),
+		AverageStars = (double)r.GetDecimal(r.GetOrdinal("average_rating")) // NUMERIC -> decimal -> double
 	};
+
+	public async Task<IReadOnlyList<Media>> QueryAsync(
+		string? title,
+		string? genre,
+		string? mediaType,
+		int? releaseYear,
+		short? ageRestriction,
+		int? rating,
+		string? sortBy,
+		int skip = 0,
+		int take = 100,
+		CancellationToken ct = default) {
+
+		// Use precomputed columns in media: average_rating + ratings_count
+		var sql = new StringBuilder(@"
+select distinct
+       m.id,
+       m.title,
+       m.description,
+       m.type,
+       m.release_year,
+       m.age_restriction,
+       m.average_rating,
+       m.ratings_count,
+       m.created_by,
+       m.created_at,
+       m.updated_at
+from media m
+left join media_genre mg on mg.media_id = m.id
+left join genre g on g.id = mg.genre_id
+where 1=1
+");
+
+		if (!string.IsNullOrWhiteSpace(title))
+			sql.Append("\n and m.title ilike @title");
+
+		if (!string.IsNullOrWhiteSpace(genre))
+			sql.Append("\n and lower(g.name) = lower(@genre)");
+
+		if (!string.IsNullOrWhiteSpace(mediaType))
+			sql.Append("\n and m.type = @mediaType::media_type");
+
+		if (releaseYear.HasValue)
+			sql.Append("\n and m.release_year = @releaseYear");
+
+		if (ageRestriction.HasValue)
+			sql.Append("\n and m.age_restriction = @ageRestriction");
+
+		if (rating.HasValue)
+			sql.Append("\n and m.average_rating >= @rating");
+
+		sortBy = (sortBy ?? "").Trim().ToLowerInvariant();
+		sql.Append(sortBy switch {
+			"title" => "\n order by m.title asc",
+			"year"  => "\n order by m.release_year desc",
+			"score" => "\n order by m.average_rating desc, m.ratings_count desc",
+			_       => "\n order by m.created_at desc"
+		});
+
+		sql.Append("\n offset @skip limit @take;");
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+		await using var cmd = Command(c, sql.ToString());
+
+		if (!string.IsNullOrWhiteSpace(title)) Param(cmd, "@title", $"%{title}%");
+		if (!string.IsNullOrWhiteSpace(genre)) Param(cmd, "@genre", genre);
+		if (!string.IsNullOrWhiteSpace(mediaType)) Param(cmd, "@mediaType", mediaType);
+		if (releaseYear.HasValue) Param(cmd, "@releaseYear", releaseYear.Value);
+		if (ageRestriction.HasValue) Param(cmd, "@ageRestriction", ageRestriction.Value);
+		if (rating.HasValue) Param(cmd, "@rating", rating.Value);
+
+		Param(cmd, "@skip", skip);
+		Param(cmd, "@take", take);
+
+		var list = new List<Media>(take);
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		while (await r.ReadAsync(ct))
+			list.Add(Map(r));
+
+		return list;
+	}
 }

@@ -10,4 +10,6 @@ public class Media {
 	public Guid CreatedBy { get; set; }
 	public DateTimeOffset CreatedAt { get; init; }
 	public DateTimeOffset UpdatedAt { get; init; } 
+	public double AverageStars { get; set; }
+	public int RatingsCount { get; set; }
 }
