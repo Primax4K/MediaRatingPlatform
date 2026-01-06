@@ -24,6 +24,7 @@ services.AddSingleton<IDbConnectionFactory>(_ =>
 services.AddSingleton<UserRouter>();
 services.AddSingleton<MediaRouter>();
 services.AddSingleton<RatingRouter>();
+services.AddSingleton<LeaderBoardRouter>();
 services.AddSingleton<RouterHandler>();
 
 services.AddScoped<IAuthHandler, AuthHandler>();

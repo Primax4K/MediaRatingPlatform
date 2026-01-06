@@ -37,8 +37,8 @@ POST {{baseUrl}}/api/users/register
 Content-Type: application/json
 
 {
-  "username": "{{username}}",
-  "password": "{{password}}"
+  "Username": "{{username}}",
+  "Password": "{{password}}"
 }
 
 > {%
@@ -55,8 +55,8 @@ POST {{baseUrl}}/api/users/register
 Content-Type: application/json
 
 {
-  "username": "{{username}}",
-  "password": "{{password}}"
+  "Username": "{{username}}",
+  "Password": "{{password}}"
 }
 
 ### =============================================================================
@@ -66,8 +66,8 @@ POST {{baseUrl}}/api/users/login
 Content-Type: application/json
 
 {
-  "username": "{{username}}",
-  "password": "{{password}}"
+  "Username": "{{username}}",
+  "Password": "{{password}}"
 }
 
 > {%
@@ -84,8 +84,8 @@ POST {{baseUrl}}/api/users/login
 Content-Type: application/json
 
 {
-  "username": "{{username}}",
-  "password": "{{badPassword}}"
+  "Username": "{{username}}",
+  "Password": "{{badPassword}}"
 }
 
 ### =============================================================================

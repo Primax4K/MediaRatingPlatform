@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using Domain.Dtos;
 
 namespace Domain.Repositories.Implementations;
 
@@ -57,6 +58,102 @@ public sealed class AppUserRepository : DbHelper, IAppUserRepository {
 
 		return Map(r);
 	}
+
+	public async Task<List<ActiveUserDto>> GetMostActiveUsers(CancellationToken ct = default) {
+		const string sql = @"select u.id, u.username, count(r.id) as ratings_count
+from app_user u
+         left join rating r on u.id = r.user_id
+group by u.id, u.username
+order by count(r.id) desc limit 10;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+
+		var list = new List<ActiveUserDto>();
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		while (await r.ReadAsync(ct)) {
+			list.Add(new ActiveUserDto(
+				r.GetGuid(r.GetOrdinal("id")),
+				r.GetString(r.GetOrdinal("username")),
+				r.GetInt32(r.GetOrdinal("ratings_count"))
+			));
+		}
+
+		return list;
+	}
+
+	public async Task<List<Rating>> GetRatingsOfUserAsync(Guid userId, int skip = 0, int take = 100,
+		CancellationToken ct = default) {
+		const string sql = @"select id,
+       media_id,
+       user_id,
+       stars,
+       comment,
+       comment_confirmed,
+       created_at,
+       updated_at
+from rating
+where user_id = @userId
+order by created_at desc
+offset @skip limit @take;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@userId", userId);
+		Param(cmd, "@skip", skip);
+		Param(cmd, "@take", take);
+
+		var list = new List<Rating>(take);
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		while (await r.ReadAsync(ct)) {
+			list.Add(new Rating {
+				Id = r.GetGuid(r.GetOrdinal("id")),
+				MediaId = r.GetGuid(r.GetOrdinal("media_id")),
+				UserId = r.GetGuid(r.GetOrdinal("user_id")),
+				Stars = r.GetInt16(r.GetOrdinal("stars")),
+				Comment = r.IsDBNull(r.GetOrdinal("comment")) ? null : r.GetString(r.GetOrdinal("comment")),
+				CommentConfirmed = r.GetBoolean(r.GetOrdinal("comment_confirmed")),
+				CreatedAt = r.GetDateTime(r.GetOrdinal("created_at")),
+				UpdatedAt = r.GetDateTime(r.GetOrdinal("updated_at"))
+			});
+		}
+
+		return list;
+	}
+
+	public async Task<List<Favorite>> GetFavoritesOfUserAsync(Guid userId, int skip = 0, int take = 100,
+		CancellationToken ct = default) {
+		const string sql = @"select user_id, media_id, created_at
+from favorite
+where user_id = @userId
+order by created_at desc
+offset @skip limit @take;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@userId", userId);
+		Param(cmd, "@skip", skip);
+		Param(cmd, "@take", take);
+
+		var list = new List<Favorite>(take);
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		while (await r.ReadAsync(ct)) {
+			list.Add(new Favorite {
+				UserId = r.GetGuid(r.GetOrdinal("user_id")),
+				MediaId = r.GetGuid(r.GetOrdinal("media_id")),
+				CreatedAt = r.GetDateTime(r.GetOrdinal("created_at"))
+			});
+		}
+
+		return list;
+	}
+
 
 	public async Task<AppUser> CreateAsync(AppUser e, CancellationToken ct = default) {
 		const string sql = @"

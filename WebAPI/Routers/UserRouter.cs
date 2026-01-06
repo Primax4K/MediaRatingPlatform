@@ -18,6 +18,8 @@ public class UserRouter : ARouter {
 		RegisterWithParams(HttpMethod.Delete.Method, "/{id}", DeleteUser, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Put.Method, "/{userId}/profile", UpdateProfile, requiresAuth: true);
 		RegisterWithParams(HttpMethod.Get.Method, "/{userId}/profile", GetProfile, requiresAuth: true);
+		RegisterWithParams(HttpMethod.Get.Method, "{userId}/ratings", GetRatingsByUserId, requiresAuth: true);
+		RegisterWithParams(HttpMethod.Get.Method, "{userId}/favorites", GetFavoritesByUserId, requiresAuth: true);
 	}
 
 	private async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response) {
@@ -126,5 +128,21 @@ public class UserRouter : ARouter {
 		else {
 			await response.WriteResponse(HttpStatusCode.NotFound, "User not found");
 		}
+	}
+	
+	private async Task GetRatingsByUserId(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		var userId = parameters["userId"];
+		var ratings = await _userRepository.GetRatingsOfUserAsync(Guid.Parse(userId));
+
+		await response.WriteResponse(JsonSerializer.Serialize(ratings));
+	}
+	
+	private async Task GetFavoritesByUserId(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		var userId = parameters["userId"];
+		var favorites = await _userRepository.GetFavoritesOfUserAsync(Guid.Parse(userId));
+
+		await response.WriteResponse(JsonSerializer.Serialize(favorites));
 	}
 }

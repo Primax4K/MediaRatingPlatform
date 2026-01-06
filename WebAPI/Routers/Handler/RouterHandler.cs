@@ -5,12 +5,14 @@ public class RouterHandler {
 	private readonly IConfiguration _configuration;
 	private readonly MediaRouter _mediaRouter;
 	private readonly RatingRouter _ratingRouter;
+	private readonly LeaderBoardRouter _leaderBoardRouter;
 
-	public RouterHandler(UserRouter usersRouter, IConfiguration configuration, MediaRouter mediaRouter, RatingRouter ratingRouter) {
+	public RouterHandler(UserRouter usersRouter, IConfiguration configuration, MediaRouter mediaRouter, RatingRouter ratingRouter, LeaderBoardRouter leaderBoardRouter) {
 		_usersRouter = usersRouter;
 		_configuration = configuration;
 		_mediaRouter = mediaRouter;
 		_ratingRouter = ratingRouter;
+		_leaderBoardRouter = leaderBoardRouter;
 	}
 
 	public async Task Dispatch(HttpListenerRequest request, HttpListenerResponse response) {
@@ -24,6 +26,9 @@ public class RouterHandler {
 		
 		string ratingRouter = _configuration["routers:ratingRouter"] ??
 		                      throw new Exception("Rating router configuration missing");
+		
+		string leaderBoardRouter = _configuration["routers:leaderBoardRouter"] ??
+		                      throw new Exception("LeaderBoard router configuration missing");
 
 		if (path.StartsWith(userRouter, StringComparison.OrdinalIgnoreCase))
 			await _usersRouter.Route(request, response, userRouter);
@@ -31,6 +36,8 @@ public class RouterHandler {
 			await _mediaRouter.Route(request, response, mediaRouter);
 		if(path.StartsWith(ratingRouter, StringComparison.OrdinalIgnoreCase))
 			await _ratingRouter.Route(request, response, ratingRouter);
+		if(path.StartsWith(leaderBoardRouter, StringComparison.OrdinalIgnoreCase))
+			await _leaderBoardRouter.Route(request, response, leaderBoardRouter);
 		else
 			response.StatusCode = 404;
 
