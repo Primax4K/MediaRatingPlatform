@@ -1,0 +1,372 @@
+﻿### =============================================================================
+### MRP API — Integration Test Suite (REST Client for VS Code)
+### -----------------------------------------------------------------------------
+### How to use:
+### 1) Install the "REST Client" extension (humao.rest-client).
+### 2) Open this file, click "Send Request" above each request.
+### 3) The suite auto-captures token, userId, mediaId, and ratingId where possible.
+### 4) Each success test has a matching error test with intentionally bad input.
+### =============================================================================
+
+### -------------------------
+### Global Variables
+### -------------------------
+@baseUrl = http://localhost:8080
+@now = {{$timestamp}}
+
+# Randomized auth data to avoid collisions
+@username = itest_user_{{now}}
+@password = itest_pass_{{now}}
+@badPassword = wrong_{{now}}
+
+# Will be updated from responses if possible
+@userId = 1
+@mediaId = 1
+@ratingId = 1
+@token = ""
+
+# Constants for negative tests
+@badUserId = 999999999
+@badMediaId = 999999999
+@badRatingId = 999999999
+
+### =============================================================================
+### 1) AUTH — Register (success)
+### =============================================================================
+POST {{baseUrl}}/api/users/register
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+> {%
+    // Capture userId if the API returns it in a common shape.
+    try {
+        const b = JSON.parse(response.body);
+        const id = b.id ?? b.userId ?? (b.data && b.data.id);
+        if (id) client.global.set("userId", String(id));
+    } catch (_) {}
+%}
+
+### 1e) AUTH — Register (error: duplicate user -> expect 409/4xx/5xx)
+POST {{baseUrl}}/api/users/register
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+### =============================================================================
+### 2) AUTH — Login (success)
+### =============================================================================
+POST {{baseUrl}}/api/users/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+> {%
+    // Capture token from common fields.
+    try {
+        const b = JSON.parse(response.body);
+        const t = b.token ?? b.accessToken ?? b.jwt ?? (b.data && b.data.token);
+        if (t) client.global.set("token", String(t));
+    } catch (_) {}
+%}
+
+### 2e) AUTH — Login (error: wrong password -> expect 401/4xx/5xx)
+POST {{baseUrl}}/api/users/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{badPassword}}"
+}
+
+### =============================================================================
+### 3) USER — Update Profile (success)
+### =============================================================================
+PUT {{baseUrl}}/api/users/{{userId}}/profile
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "{{username}}@example.com",
+  "favoriteGenre": "sci-fi"
+}
+
+### 3e) USER — Update Profile (error: invalid email -> expect 400/422/4xx/5xx)
+PUT {{baseUrl}}/api/users/{{userId}}/profile
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "email": "not-an-email",
+  "favoriteGenre": "sci-fi"
+}
+
+### =============================================================================
+### 4) USER — Get Profile (success)
+### =============================================================================
+GET {{baseUrl}}/api/users/{{userId}}/profile
+Authorization: Bearer {{token}}
+
+### 4e) USER — Get Profile (error: user not found -> expect 404/4xx/5xx)
+GET {{baseUrl}}/api/users/{{badUserId}}/profile
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 5) USER — Get Rating History (success)
+### =============================================================================
+GET {{baseUrl}}/api/users/{{userId}}/ratings
+Authorization: Bearer {{token}}
+
+### 5e) USER — Get Rating History (error: user not found -> expect 404/4xx/5xx)
+GET {{baseUrl}}/api/users/{{badUserId}}/ratings
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 6) USER — Get Favorites (success)
+### =============================================================================
+GET {{baseUrl}}/api/users/{{userId}}/favorites
+Authorization: Bearer {{token}}
+
+### 6e) USER — Get Favorites (error: user not found -> expect 404/4xx/5xx)
+GET {{baseUrl}}/api/users/{{badUserId}}/favorites
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 7) MEDIA — Create (success)
+### =============================================================================
+POST {{baseUrl}}/api/media
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Inception",
+  "description": "Sci-fi thriller",
+  "mediaType": "movie",
+  "releaseYear": 2010,
+  "genres": ["sci-fi","thriller"],
+  "ageRestriction": 12
+}
+
+> {%
+    // Capture mediaId if present
+    try {
+        const b = JSON.parse(response.body);
+        const id = b.id ?? b.mediaId ?? (b.data && b.data.id);
+        if (id) client.global.set("mediaId", String(id));
+    } catch (_) {}
+%}
+
+### 7e) MEDIA — Create (error: empty title -> expect 400/422/4xx/5xx)
+POST {{baseUrl}}/api/media
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "",
+  "description": "desc",
+  "mediaType": "movie",
+  "releaseYear": 2010,
+  "genres": ["sci-fi"],
+  "ageRestriction": 12
+}
+
+### =============================================================================
+### 8) MEDIA — Get by ID (success)
+### =============================================================================
+GET {{baseUrl}}/api/media/{{mediaId}}
+Authorization: Bearer {{token}}
+
+### 8e) MEDIA — Get by ID (error: not found -> expect 404/4xx/5xx)
+GET {{baseUrl}}/api/media/{{badMediaId}}
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 9) MEDIA — Update (success)
+### =============================================================================
+PUT {{baseUrl}}/api/media/{{mediaId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Inception Updated",
+  "description": "Updated description",
+  "mediaType": "movie",
+  "releaseYear": 2010,
+  "genres": ["sci-fi", "action"],
+  "ageRestriction": 16
+}
+
+### 9e) MEDIA — Update (error: invalid year -> expect 400/422/4xx/5xx)
+PUT {{baseUrl}}/api/media/{{mediaId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Bad Year",
+  "description": "desc",
+  "mediaType": "movie",
+  "releaseYear": -1,
+  "genres": ["sci-fi"],
+  "ageRestriction": 12
+}
+
+### =============================================================================
+### 10) MEDIA — Search & Filter (success)
+### =============================================================================
+GET {{baseUrl}}/api/media?title=incep&genre=sci-fi&sortBy=score
+Authorization: Bearer {{token}}
+
+### 10e) MEDIA — Search & Filter (error: invalid sortBy -> expect 400/422/4xx/5xx)
+GET {{baseUrl}}/api/media?title=incep&genre=sci-fi&sortBy=not-a-valid-field
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 11) MEDIA — Full Search (success)
+### =============================================================================
+GET {{baseUrl}}/api/media?title=inception&genre=sci-fi&mediaType=movie&releaseYear=2010&ageRestriction=12&rating=4&sortBy=title
+Authorization: Bearer {{token}}
+
+### 11e) MEDIA — Full Search (error: non-numeric rating -> expect 400/422/4xx/5xx)
+GET {{baseUrl}}/api/media?title=inception&genre=sci-fi&mediaType=movie&releaseYear=2010&ageRestriction=12&rating=notanumber&sortBy=title
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 12) RATING — Rate Media (success)
+### =============================================================================
+POST {{baseUrl}}/api/media/{{mediaId}}/rate
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stars": 5,
+  "comment": "Amazing movie!"
+}
+
+> {%
+    // Capture ratingId if present
+    try {
+        const b = JSON.parse(response.body);
+        const id = b.id ?? b.ratingId ?? (b.data && b.data.id);
+        if (id) client.global.set("ratingId", String(id));
+    } catch (_) {}
+%}
+
+### 12e) RATING — Rate Media (error: invalid stars -> expect 400/422/4xx/5xx)
+POST {{baseUrl}}/api/media/{{mediaId}}/rate
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stars": 999,
+  "comment": "way too many stars"
+}
+
+### =============================================================================
+### 13) RATING — Like (success)
+### =============================================================================
+POST {{baseUrl}}/api/ratings/{{ratingId}}/like
+Authorization: Bearer {{token}}
+
+### 13e) RATING — Like (error: not found -> expect 404/4xx/5xx)
+POST {{baseUrl}}/api/ratings/{{badRatingId}}/like
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 14) RATING — Update (success)
+### =============================================================================
+PUT {{baseUrl}}/api/ratings/{{ratingId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stars": 4,
+  "comment": "Updated comment"
+}
+
+### 14e) RATING — Update (error: invalid stars -> expect 400/422/4xx/5xx)
+PUT {{baseUrl}}/api/ratings/{{ratingId}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stars": -1,
+  "comment": "stars cannot be negative"
+}
+
+### =============================================================================
+### 15) RATING — Confirm (success)
+### =============================================================================
+POST {{baseUrl}}/api/ratings/{{ratingId}}/confirm
+Authorization: Bearer {{token}}
+
+### 15e) RATING — Confirm (error: not found -> expect 404/4xx/5xx)
+POST {{baseUrl}}/api/ratings/{{badRatingId}}/confirm
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 16) FAVORITES — Mark (success)
+### =============================================================================
+POST {{baseUrl}}/api/media/{{mediaId}}/favorite
+Authorization: Bearer {{token}}
+
+### 16e) FAVORITES — Mark (error: media not found -> expect 404/4xx/5xx)
+POST {{baseUrl}}/api/media/{{badMediaId}}/favorite
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 17) FAVORITES — Unmark (success)
+### =============================================================================
+DELETE {{baseUrl}}/api/media/{{mediaId}}/favorite
+Authorization: Bearer {{token}}
+
+### 17e) FAVORITES — Unmark (error: media not found -> expect 404/4xx/5xx)
+DELETE {{baseUrl}}/api/media/{{badMediaId}}/favorite
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 18) RECOMMENDATION — By Genre (success)
+### =============================================================================
+GET {{baseUrl}}/api/users/{{userId}}/recommendations?type=genre
+Authorization: Bearer {{token}}
+
+### 18e) RECOMMENDATION — Invalid type (error -> expect 400/422/4xx/5xx)
+GET {{baseUrl}}/api/users/{{userId}}/recommendations?type=unknown-type
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 19) RECOMMENDATION — By Content (success)
+### =============================================================================
+GET {{baseUrl}}/api/users/{{userId}}/recommendations?type=content
+Authorization: Bearer {{token}}
+
+### 19e) RECOMMENDATION — Bad user (error -> expect 404/4xx/5xx)
+GET {{baseUrl}}/api/users/{{badUserId}}/recommendations?type=content
+Authorization: Bearer {{token}}
+
+### =============================================================================
+### 20) LEADERBOARD — Get (success)
+### =============================================================================
+GET {{baseUrl}}/api/leaderboard
+Authorization: Bearer {{token}}
+
+### 20e) LEADERBOARD — Unauthorized (error attempt -> expect 401/4xx/5xx)
+GET {{baseUrl}}/api/leaderboard
+
+### =============================================================================
+### 21) MEDIA — Delete (success)
+### =============================================================================
+DELETE {{baseUrl}}/api/media/{{mediaId}}
+Authorization: Bearer {{token}}
+
+### 21e) MEDIA — Delete (error: already deleted -> expect 404/4xx/5xx)
+DELETE {{baseUrl}}/api/media/{{mediaId}}
+Authorization: Bearer {{token}}

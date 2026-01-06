@@ -1,57 +1,114 @@
-﻿namespace Domain.Repositories.Implementations;
+﻿using System.Data.Common;
 
-public sealed class AppUserRepository : IAppUserRepository {
-    private readonly IDbConnectionFactory _factory;
-    public AppUserRepository(IDbConnectionFactory factory) => _factory = factory;
+namespace Domain.Repositories.Implementations;
 
-    public async Task<AppUser?> GetByIdAsync(Guid id, CancellationToken ct = default) {
-        const string sql =
-            "select id, username, passwordhash as PasswordHash, createdat as CreatedAt from appuser where id = @id;";
-        await using var c = _factory.Create();
-        await c.OpenAsync(ct);
-        return await c.QueryFirstOrDefaultAsync<AppUser>(new CommandDefinition(sql, new { id }, cancellationToken: ct));
-    }
+public sealed class AppUserRepository : DbHelper, IAppUserRepository {
+	private readonly IDbConnectionFactory _factory;
+	public AppUserRepository(IDbConnectionFactory factory) => _factory = factory;
 
-    public async Task<IReadOnlyList<AppUser>> ListAsync(int skip = 0, int take = 100, CancellationToken ct = default) {
-        const string sql =
-            "select id, username, passwordhash as PasswordHash, createdat as CreatedAt from appuser order by createdat desc offset @skip limit @take;";
-        await using var c = _factory.Create();
-        await c.OpenAsync(ct);
-        var rows = await c.QueryAsync<AppUser>(new CommandDefinition(sql, new { skip, take }, cancellationToken: ct));
-        return rows.AsList();
-    }
+	public async Task<AppUser?> GetByIdAsync(Guid id, CancellationToken ct = default) {
+		const string sql =
+			"select id, username, password_hash as PasswordHash, created_at as CreatedAt from app_user where id=@id;";
 
-    public async Task<AppUser?> GetByUsernameAsync(string username, CancellationToken ct = default) {
-        const string sql =
-            "select id, username, passwordhash as PasswordHash, createdat as CreatedAt from appuser where lower(username)=lower(@u) limit 1;";
-        await using var c = _factory.Create();
-        await c.OpenAsync(ct);
-        return await c.QueryFirstOrDefaultAsync<AppUser>(new CommandDefinition(sql, new { u = username },
-            cancellationToken: ct));
-    }
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
 
-    public async Task<AppUser> CreateAsync(AppUser e, CancellationToken ct = default) {
-        const string sql = @"insert into appuser (id, username, passwordhash, createdat)
-                             values (coalesce(@Id, gen_random_uuid()), @Username, @PasswordHash, now())
-                             returning id, username, passwordhash as PasswordHash, createdat as CreatedAt;";
-        await using var c = _factory.Create();
-        await c.OpenAsync(ct);
-        return await c.QuerySingleAsync<AppUser>(new CommandDefinition(sql, e, cancellationToken: ct));
-    }
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@id", id);
 
-    public async Task<bool> UpdateAsync(AppUser e, CancellationToken ct = default) {
-        const string sql = "update appuser set username=@Username, passwordhash=@PasswordHash where id=@Id;";
-        await using var c = _factory.Create();
-        await c.OpenAsync(ct);
-        var n = await c.ExecuteAsync(new CommandDefinition(sql, e, cancellationToken: ct));
-        return n == 1;
-    }
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		if (!await r.ReadAsync(ct)) return null;
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default) {
-        const string sql = "delete from appuser where id=@id;";
-        await using var c = _factory.Create();
-        await c.OpenAsync(ct);
-        var n = await c.ExecuteAsync(new CommandDefinition(sql, new { id }, cancellationToken: ct));
-        return n == 1;
-    }
+		return Map(r);
+	}
+
+	public async Task<IReadOnlyList<AppUser>> ListAsync(int skip = 0, int take = 100,
+		CancellationToken ct = default) {
+		const string sql =
+			"select id, username, password_hash as PasswordHash, created_at as CreatedAt from app_user order by created_at desc offset @skip limit @take;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@skip", skip);
+		Param(cmd, "@take", take);
+
+		var list = new List<AppUser>(take);
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		while (await r.ReadAsync(ct))
+			list.Add(Map(r));
+
+		return list;
+	}
+
+	public async Task<AppUser?> GetByUsernameAsync(string username, CancellationToken ct = default) {
+		const string sql =
+			"select id, username, password_hash as PasswordHash, created_at as CreatedAt from app_user where lower(username)=lower(@u) limit 1;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@u", username);
+
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		if (!await r.ReadAsync(ct)) return null;
+
+		return Map(r);
+	}
+
+	public async Task<AppUser> CreateAsync(AppUser e, CancellationToken ct = default) {
+		const string sql = @"
+insert into app_user (id, username, password_hash, created_at)
+values (coalesce(@Id, gen_random_uuid()), @Username, @PasswordHash, now())
+returning id, username, password_hash as PasswordHash, created_at as CreatedAt;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@Id", (object?)e.Id ?? DBNull.Value);
+		Param(cmd, "@Username", e.Username);
+		Param(cmd, "@PasswordHash", e.PasswordHash);
+
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		if (!await r.ReadAsync(ct)) throw new InvalidOperationException();
+
+		return Map(r);
+	}
+
+	public async Task<bool> UpdateAsync(AppUser e, CancellationToken ct = default) {
+		const string sql =
+			"update app_user set username=@Username, password_hash=@PasswordHash where id=@Id;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@Id", e.Id);
+		Param(cmd, "@Username", e.Username);
+		Param(cmd, "@PasswordHash", e.PasswordHash);
+
+		return await cmd.ExecuteNonQueryAsync(ct) == 1;
+	}
+
+	public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default) {
+		const string sql = "delete from app_user where id=@id;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@id", id);
+
+		return await cmd.ExecuteNonQueryAsync(ct) == 1;
+	}
+
+	private static AppUser Map(DbDataReader r) => new() {
+		Id = r.GetGuid(r.GetOrdinal("id")),
+		Username = r.GetString(r.GetOrdinal("username")),
+		PasswordHash = r.GetString(r.GetOrdinal("PasswordHash")),
+		CreatedAt = r.GetDateTime(r.GetOrdinal("CreatedAt"))
+	};
 }

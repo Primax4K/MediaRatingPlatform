@@ -8,11 +8,13 @@ public class UserRouter : ARouter {
 		_authHandler = authHandler;
 		_userRepository = userRepository;
 
-		Register(HttpMethod.Get.Method, "/abc/ta", HandleGet, requiresAuth: true);
-		RegisterWithParams(HttpMethod.Get.Method, "/abc/{id}/{name}", HandleGetWithId, requiresAuth: true);
+		//Register(HttpMethod.Get.Method, "/abc/ta", HandleGet, requiresAuth: true);
+		//RegisterWithParams(HttpMethod.Get.Method, "/abc/{id}/{name}", HandleGetWithId, requiresAuth: true);
 		Register(HttpMethod.Post.Method, "/register", HandleRegister, requiresAuth: false);
 		Register(HttpMethod.Post.Method, "/login", HandleLogin, requiresAuth: false);
 		RegisterWithParams(HttpMethod.Delete.Method, "/{id}", DeleteUser, requiresAuth: true);
+		RegisterWithParams(HttpMethod.Put.Method, "/{userId}/profile", UpdateProfile, requiresAuth: true);
+		RegisterWithParams(HttpMethod.Get.Method, "/{userId}/profile", GetProfile, requiresAuth: true);
 	}
 
 	private async Task HandleGet(HttpListenerRequest request, HttpListenerResponse response) {
@@ -62,15 +64,64 @@ public class UserRouter : ARouter {
 		else
 			await response.WriteResponse(HttpStatusCode.Unauthorized, "Authentication failed");
 	}
-	
+
 	private async Task DeleteUser(HttpListenerRequest request, HttpListenerResponse response,
 		Dictionary<string, string> parameters) {
 		var id = parameters["id"];
 		bool success = await _userRepository.DeleteAsync(Guid.Parse(id));
-		
+
 		if (success)
 			response.StatusCode = (int)HttpStatusCode.NoContent;
 		else
 			await response.WriteResponse(HttpStatusCode.NotFound, "User not found");
+	}
+
+	private async Task UpdateProfile(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		var userId = parameters["userId"];
+		var body = await request.ReadRequestBodyAsync();
+		
+		string token = request.GetAuthToken();
+
+		string? activeUserId = await _authHandler.GetUserIdFromTokenAsync(token);
+		
+		if (activeUserId == null || activeUserId != userId) {
+			await response.WriteResponse(HttpStatusCode.Unauthorized, "Invalid token or unauthorized access");
+			return;
+		}
+		
+		UpdateUserDto? updateDto = JsonSerializer.Deserialize<UpdateUserDto>(body);
+		
+		if (updateDto == null || string.IsNullOrEmpty(updateDto.Username)) {
+			await response.WriteResponse(HttpStatusCode.BadRequest, "Invalid profile data");
+			return;
+		}
+		AppUser? user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+		if (user != null) {
+			user.Username = updateDto.Username;
+			await _userRepository.UpdateAsync(user);
+			await response.WriteResponse(HttpStatusCode.NoContent, string.Empty);
+		}
+		else {
+			await response.WriteResponse(HttpStatusCode.NotFound, "User not found");
+		}
+	}
+
+	private async Task GetProfile(HttpListenerRequest request, HttpListenerResponse response,
+		Dictionary<string, string> parameters) {
+		var userId = parameters["userId"];
+		AppUser? user = await _userRepository.GetByIdAsync(Guid.Parse(userId));
+
+		if (user != null) {
+			var profileDto = new ReadUserDto() {
+				Id = Guid.Parse(userId),
+				Username = user.Username,
+				CreatedAt = user.CreatedAt
+			};
+			await response.WriteResponse(JsonSerializer.Serialize(profileDto));
+		}
+		else {
+			await response.WriteResponse(HttpStatusCode.NotFound, "User not found");
+		}
 	}
 }
