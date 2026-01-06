@@ -85,6 +85,32 @@ where user_id = @u
 		return Map(r);
 	}
 
+	public async Task<Rating?> ConfirmRating(Guid ratingId, CancellationToken ct = default) {
+		const string sql = @"update rating
+set comment_confirmed = true,
+    updated_at        = now()
+where id = @id returning id,
+          media_id,
+          user_id,
+          stars,
+          comment,
+          comment_confirmed,
+          created_at,
+          updated_at;";
+
+		await using var c = _factory.Create();
+		await OpenAsync(c, ct);
+
+		await using var cmd = Command(c, sql);
+		Param(cmd, "@id", ratingId);
+
+		await using var r = await cmd.ExecuteReaderAsync(ct);
+		if (!await r.ReadAsync(ct)) return null;
+
+		return Map(r);
+	}
+
+
 	public async Task<Rating> CreateAsync(Rating e, CancellationToken ct = default) {
 		const string sql = @"
 insert into rating (id, media_id, user_id, stars, comment, comment_confirmed, created_at, updated_at)
